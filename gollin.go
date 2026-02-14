@@ -19,14 +19,14 @@ func main() {
 
     var gollinPath string
 
-    if strings.HasSuffix(filePath, ".gollin") {
+    if strings.HasSuffix(filePath, ".gol") {
        gollinPath = filePath
     } else {
         // Build the full filepath
         // Should probably check for extensions before doing this
         var gollinBuilder strings.Builder
         gollinBuilder.WriteString(filePath)
-        gollinBuilder.WriteString(".gollin")
+        gollinBuilder.WriteString(".gol")
         gollinPath = gollinBuilder.String()
     }
 
@@ -40,7 +40,7 @@ func main() {
     // Manipulate the code here
     // parse()
 
-    // we know gollinPath has suffix .gollin at this point
+    // we know gollinPath has suffix .gol at this point
     newFilePath := strings.Split(gollinPath, ".")[0]
     var goPath strings.Builder
     goPath.WriteString(newFilePath)
