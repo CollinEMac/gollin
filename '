@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"unicode"
 )
 
 type TryCatch struct {
@@ -70,7 +69,10 @@ func transpile(gollinPath string) []byte {
 
 			// Expect opening brace
 			if i >= len(src) || src[i] != '{' {
-				log.Fatalf("transpile error: 'try' keyword not followed by '{' at position %d\n", i)
+				// this isn't a valie try block, maybe this should raise an error
+				// but the error will be caught at compile time anyway
+				output.WriteString("try")
+				continue
 			}
 			i++ // consume the opening {
 
@@ -87,7 +89,7 @@ func transpile(gollinPath string) []byte {
 				i = skipWhitespace(src, i)
 
 				if i < len(src) && src[i] == '{' {
-					i++ // consume the opening {
+					i++ // consume '{'
 					catchBody, i = collectBlock(src, i)
 				}
 			}
@@ -111,7 +113,8 @@ func transpile(gollinPath string) []byte {
 }
 
 // collectBlock reads characters until the matching closing brace,
-// handling nested braces.
+// handling nested braces. Assumes the opening '{' has already been consumed.
+// Returns the content inside the braces and the index after the '}'.
 func collectBlock(src string, i int) (string, int) {
 	var body strings.Builder
 	depth := 1
@@ -126,7 +129,7 @@ func collectBlock(src string, i int) (string, int) {
 			if depth > 0 {
 				body.WriteByte(ch)
 			}
-			// at depth == 0 just stop
+			// at depth == 0 we stop, don't write the closing brace
 		} else {
 			body.WriteByte(ch)
 		}
@@ -168,7 +171,7 @@ func getAssignmentBefore(written string) string {
 		return ""
 	}
 
-	// Check it ends with := or = but not ==
+	// Check it ends with := or =  (but not ==)
 	if strings.HasSuffix(currentLine, ":=") {
 		return currentLine
 	}
@@ -203,14 +206,14 @@ func getIndentAt(src string, i int) string {
 }
 
 func skipWhitespace(src string, i int) int {
-    for i < len(src) && unicode.IsSpace(rune(src[i])) {
-        i++
-    }
-    return i
+	for i < len(src) && (src[i] == ' ' || src[i] == '\t' || src[i] == '\n' || src[i] == '\r') {
+		i++
+	}
+	return i
 }
 
 func isIdentChar(ch rune) bool {
-    return unicode.IsLetter(ch) || unicode.IsDigit(ch) || ch == '_'
+	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_'
 }
 
 func renderTryCatch(tc TryCatch, indent string) string {

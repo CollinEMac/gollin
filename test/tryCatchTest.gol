@@ -1,0 +1,11 @@
+package main
+
+import "os"
+
+func main() {
+    f := try {
+        os.Open("test.txt")
+    } catch {
+        fmt.Println("I could not open that text file");
+    }
+}
