@@ -89,3 +89,49 @@ func main() {
         t.Errorf(`Transpiling did not work, expected output was not produced`);
 	}
 }
+
+
+func MultipleTryCatches(t *testing.T) {
+	src := `
+package main
+
+import "os"
+
+func main() {
+    f := try {
+        os.Open("test.txt")
+    } catch {
+        fmt.Println("I could not open that text file");
+    }
+
+    f2 := try {
+        os.Open("test2.txt")
+    } catch {
+        fmt.Println("I could not open that text file either");
+    }
+}
+`
+
+	expected := `
+package main
+
+import "os"
+
+func main() {
+    f, err := os.Open("test.txt")
+    if err != nil {
+        fmt.Println("I could not open that text file");
+    }
+
+    f2, err := os.Open("test2.txt")
+    if err != nil {
+        fmt.Println("I could not open that text file either");
+    }
+
+}`
+	byteString := string(transpile(src));
+
+	if byteString != expected {
+        t.Errorf(`Transpiling did not work, expected output was not produced`);
+	}
+}
