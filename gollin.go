@@ -91,8 +91,6 @@ func transpile(src string) []byte {
 					catchBody, i = collectBlock(src, i)
 				}
 
-				fmt.Printf("%q\n", catchBody)
-
 				trimmed := strings.TrimLeft(catchBody, "\n\r")
 				catchBodyIndent = trimmed[:len(trimmed)-len(strings.TrimLeft(trimmed, " \t"))]
 			}

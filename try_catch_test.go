@@ -32,6 +32,30 @@ func TestMatchKeywordFail(t *testing.T) {
 	}
 }
 
+func TestTranspileWithoutGollinCode(t *testing.T) {
+	src := `
+package main
+
+import "os"
+
+func main() {
+    f := os.Open("test.txt")
+}`
+
+	expected := `
+package main
+
+import "os"
+
+func main() {
+    f := os.Open("test.txt")
+}`
+	byteString := string(transpile(src));
+
+	if byteString != expected {
+        t.Errorf(`Transpiling did not work, expected output was not produced`);
+	}
+}
 
 func TestFullTranspile(t *testing.T) {
 	src := `
