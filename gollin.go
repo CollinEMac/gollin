@@ -9,10 +9,11 @@ import (
 )
 
 type TryCatch struct {
-	assignment string
-	funcCall   string
-	catchBody  string
-	hasAssign  bool
+	assignment      string
+	funcCall        string
+	catchBody       string
+	catchBodyIndent string
+	hasAssign       bool
 }
 
 func main() {
@@ -33,7 +34,12 @@ func main() {
 		gollinPath = gollinBuilder.String()
 	}
 
-	goCode := transpile(gollinPath)
+	gollinCode, err := os.ReadFile(gollinPath)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	goCode := transpile(string(gollinCode))
 
 	newFilePath := strings.Split(gollinPath, ".")[0]
 	var goPath strings.Builder
@@ -43,14 +49,7 @@ func main() {
 	os.WriteFile(goPath.String(), goCode, 0777)
 }
 
-func transpile(gollinPath string) []byte {
-	gollinCode, err := os.ReadFile(gollinPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	src := string(gollinCode)
-
+func transpile(src string) []byte {
 	var output strings.Builder
 	i := 0
 
@@ -82,6 +81,7 @@ func transpile(gollinPath string) []byte {
 
 			// Check for optional catch
 			var catchBody string
+			var catchBodyIndent string
 			if matchKeyword(src, i, "catch") {
 				i += len("catch")
 				i = skipWhitespace(src, i)
@@ -90,13 +90,19 @@ func transpile(gollinPath string) []byte {
 					i++ // consume the opening {
 					catchBody, i = collectBlock(src, i)
 				}
+
+				fmt.Printf("%q\n", catchBody)
+
+				trimmed := strings.TrimLeft(catchBody, "\n\r")
+				catchBodyIndent = trimmed[:len(trimmed)-len(strings.TrimLeft(trimmed, " \t"))]
 			}
 
 			tc := TryCatch{
-				assignment: strings.TrimSpace(assignment),
-				funcCall:   strings.TrimSpace(tryBody),
-				catchBody:  strings.TrimSpace(catchBody),
-				hasAssign:  strings.TrimSpace(assignment) != "",
+				assignment:      strings.TrimSpace(assignment),
+				funcCall:        strings.TrimSpace(tryBody),
+				catchBody:       strings.TrimSpace(catchBody),
+				catchBodyIndent: catchBodyIndent,
+				hasAssign:       strings.TrimSpace(assignment) != "",
 			}
 
 			output.WriteString(renderTryCatch(tc, indent))
@@ -230,10 +236,11 @@ func renderTryCatch(tc TryCatch, indent string) string {
 
 	b.WriteString(fmt.Sprintf("%sif err != nil {\n", indent))
 	if tc.catchBody != "" {
-		b.WriteString(fmt.Sprintf("%s\t%s\n", indent, tc.catchBody))
+		b.WriteString(fmt.Sprintf("%s%s\n", tc.catchBodyIndent, tc.catchBody))
 	} else {
 		b.WriteString(fmt.Sprintf("%s\treturn err\n", indent))
 	}
+
 	b.WriteString(fmt.Sprintf("%s}\n", indent))
 
 	return b.String()
