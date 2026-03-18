@@ -107,6 +107,29 @@ func transpile(src string) []byte {
 			continue
 		}
 
+		// collect strings for string interpolation
+		if src[i] == '"' {
+			i++ // consume opening quote
+			rawString, next := collectString(src, i)
+			i = next
+
+			if strings.Contains(rawString, `\{`) {
+				trimPrecedingCall(&output)
+				output.WriteString(renderInterpolation(rawString))
+
+				// Consume the closing ')' that belonged to the original call
+				if i < len(src) && src[i] == ')' {
+					i++
+				}
+			} else {
+				// no interpolation, just leave the string alone
+				output.WriteByte('"')
+				output.WriteString(rawString)
+				output.WriteByte('"')
+			}
+			continue
+		}
+
 		output.WriteByte(src[i])
 		i++
 	}
@@ -137,6 +160,32 @@ func collectBlock(src string, i int) (string, int) {
 		i++
 	}
 
+	return body.String(), i
+}
+
+// collectString reads characters from src[i:] up to (but not including) the
+// closing unescaped double-quote
+func collectString(src string, i int) (string, int) {
+	var body strings.Builder
+	for i < len(src) {
+		ch := src[i]
+		// Honor backslash escapes so \" doesn't end the string.
+		if ch == '\\' && i+1 < len(src) {
+			next := src[i+1]
+			// \{ is our interpolation sigil — keep it as-is so
+			// renderInterpolation can find it later.
+			body.WriteByte(ch)
+			body.WriteByte(next)
+			i += 2
+			continue
+		}
+		if ch == '"' {
+			i++ // consume closing quote
+			break
+		}
+		body.WriteByte(ch)
+		i++
+	}
 	return body.String(), i
 }
 
@@ -194,6 +243,28 @@ func trimAssignmentFromOutput(output *strings.Builder) {
 	}
 }
 
+// Trim to the end of the preceding line for string interpolation
+func trimPrecedingCall(output *strings.Builder) {
+	s := output.String()
+	// Find the opening paren of the call
+	parenIdx := strings.LastIndex(s, "(")
+	lineStart := strings.LastIndex(s[:parenIdx], "\n")
+	output.Reset()
+	if lineStart >= 0 {
+		// Keep everything up to and including the newline
+		output.WriteString(s[:lineStart+1])
+	}
+	// Re-emit the indent
+	line := s[lineStart+1 : parenIdx]
+	for _, ch := range line {
+		if ch == ' ' || ch == '\t' {
+			output.WriteRune(ch)
+		} else {
+			break
+		}
+	}
+}
+
 func getIndentAt(src string, i int) string {
 	lineStart := i
 	for lineStart > 0 && src[lineStart-1] != '\n' {
@@ -242,4 +313,45 @@ func renderTryCatch(tc TryCatch, indent string) string {
 	b.WriteString(fmt.Sprintf("%s}\n", indent))
 
 	return b.String()
+}
+
+// renderInterpolation converts a raw string to a fmt.Sprintf call if the
+// string interpolation \{variable} formatting is found.
+func renderInterpolation(raw string) string {
+	var format strings.Builder
+	var args []string
+
+	i := 0
+	for i < len(raw) {
+		// Look for the interpolation sigil \{
+		if raw[i] == '\\' && i+1 < len(raw) && raw[i+1] == '{' {
+			i += 2 // skip \{
+
+			// Collect everything up to the closing }
+			var expr strings.Builder
+			for i < len(raw) && raw[i] != '}' {
+				expr.WriteByte(raw[i])
+				i++
+			}
+			i++ // consume the closing }
+
+			format.WriteString("%v")
+			args = append(args, strings.TrimSpace(expr.String()))
+			continue
+		}
+
+		if raw[i] == '%' {
+			// escape any bare % for Sprintf
+			format.WriteString("%%")
+		} else {
+			// Just pass on regular characters
+			format.WriteByte(raw[i])
+		}
+		i++
+	}
+
+	return fmt.Sprintf(`fmt.Sprintf("%s", %s)`,
+		format.String(),
+		strings.Join(args, ", "),
+	)
 }
