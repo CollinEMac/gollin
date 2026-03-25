@@ -1,7 +1,9 @@
-package main
+package main_test
 
 import (
 	"testing"
+
+	"github.com/CollinEMac/gollin/transpiler"
 )
 
 func TestTernaryOperator(t *testing.T) {
@@ -26,7 +28,7 @@ func main() {
     type := func() any { if holes >= 1 { return "swiss" }; return "cheddar" }()
     fmt.Println(type)
 }`
-	byteString := string(transpile(src));
+	byteString := string(transpiler.Transpile(src));
 
 	if byteString != expected {
         t.Errorf(`%s`, byteString);

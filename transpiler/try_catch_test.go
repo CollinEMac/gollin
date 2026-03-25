@@ -1,4 +1,4 @@
-package main
+package transpiler
 
 import (
 	"testing"
@@ -32,7 +32,7 @@ func TestMatchKeywordFail(t *testing.T) {
 	}
 }
 
-func TestTranspileWithoutGollinCode(t *testing.T) {
+func TestTranspilerWithoutGollinCode(t *testing.T) {
 	src := `
 package main
 
@@ -50,14 +50,14 @@ import "os"
 func main() {
     f := os.Open("test.txt")
 }`
-	byteString := string(transpile(src));
+	byteString := string(Transpile(src));
 
 	if byteString != expected {
         t.Errorf(`Transpiling did not work, expected output was not produced`);
 	}
 }
 
-func TestFullTranspile(t *testing.T) {
+func TestFullTranspiler(t *testing.T) {
 	src := `
 package main
 
@@ -83,7 +83,7 @@ func main() {
     }
 
 }`
-	byteString := string(transpile(src));
+	byteString := string(Transpile(src));
 
 	if byteString != expected {
         t.Errorf(`Transpiling did not work, expected output was not produced`);
@@ -129,7 +129,7 @@ func main() {
     }
 
 }`
-	byteString := string(transpile(src));
+	byteString := string(Transpile(src));
 
 	if byteString != expected {
         t.Errorf(`Transpiling did not work, expected output was not produced`);

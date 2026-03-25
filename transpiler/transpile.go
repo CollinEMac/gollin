@@ -1,9 +1,8 @@
-package main
+package transpiler
 
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"unicode"
 )
@@ -16,40 +15,7 @@ type TryCatch struct {
 	hasAssign       bool
 }
 
-func main() {
-	if len(os.Args) < 2 {
-		log.Fatal("gollin file path required.")
-		os.Exit(1)
-	}
-	path := os.Args[1]
-
-	var gollinPath string
-
-	if strings.HasSuffix(path, ".gol") {
-		gollinPath = path
-	} else {
-		var gollinBuilder strings.Builder
-		gollinBuilder.WriteString(path)
-		gollinBuilder.WriteString(".gol")
-		gollinPath = gollinBuilder.String()
-	}
-
-	gollinCode, err := os.ReadFile(gollinPath)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	goCode := transpile(string(gollinCode))
-
-	newFilePath := strings.Split(gollinPath, ".")[0]
-	var goPath strings.Builder
-	goPath.WriteString(newFilePath)
-	goPath.WriteString(".go")
-
-	os.WriteFile(goPath.String(), goCode, 0777)
-}
-
-func transpile(src string) []byte {
+func Transpile(src string) []byte {
 	var output strings.Builder
 	i := 0
 

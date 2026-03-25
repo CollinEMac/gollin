@@ -1,7 +1,9 @@
-package main
+package main_test
 
 import (
 	"testing"
+
+	"github.com/CollinEMac/gollin/transpiler"
 )
 
 func TestRegularStringIsLeftAlone(t *testing.T) {
@@ -26,7 +28,7 @@ func main() {
 	n := 1000
 	fmt.Printf("I like %s times %d", cheese, n)
 }`
-	byteString := string(transpile(src));
+	byteString := string(transpiler.Transpile(src));
 
 	if byteString != expected {
         t.Errorf(`Transpiling did not work, expected output was not produced`);
@@ -53,7 +55,7 @@ func main() {
 	cheese := "cheddar"
 	fmt.Sprintf("I like %v", cheese)
 }`
-	byteString := string(transpile(src));
+	byteString := string(transpiler.Transpile(src));
 
 	if byteString != expected {
         t.Errorf(`Transpiling did not work, expected output was not produced`);
@@ -82,7 +84,7 @@ func main() {
     crackers := "ritz"
 	fmt.Sprintf("I like %v and %v", cheese, crackers)
 }`
-	byteString := string(transpile(src));
+	byteString := string(transpiler.Transpile(src));
 
 	if byteString != expected {
         t.Errorf(`Transpiling did not work, expected output was not produced`);
@@ -112,7 +114,7 @@ func main() {
 	n := 1000
 	fmt.Sprintf("I like %v times %v", cheese, n)
 }`
-	byteString := string(transpile(src));
+	byteString := string(transpiler.Transpile(src));
 
 	if byteString != expected {
         t.Errorf(`Transpiling did not work, expected output was not produced`);
