@@ -130,6 +130,33 @@ func transpile(src string) []byte {
 			continue
 		}
 
+		// Ternary operator
+		if src[i] == '?' {
+			condition := getTernaryCondition(output.String())
+			if condition != "" {
+				trimTernaryCondition(&output)
+			}
+			i++ // consume '?'
+			i = skipWhitespace(src, i)
+
+			trueBranch, next := collectUntil(src, i, ':')
+			i = next
+			i++ // consme ':'
+			i = skipWhitespace(src, i)
+
+			falseBranch, next2 := collectUntil(src, i, '\n', ';')
+
+			i = next2
+
+			output.WriteString(renderTernary(
+				strings.TrimSpace(condition),
+				strings.TrimSpace(trueBranch),
+				strings.TrimSpace(falseBranch),
+			))
+			continue
+		}
+
+
 		output.WriteByte(src[i])
 		i++
 	}
@@ -354,4 +381,68 @@ func renderInterpolation(raw string) string {
 		format.String(),
 		strings.Join(args, ", "),
 	)
+}
+
+// collectUntil reads characters until the given stop byte
+func collectUntil(src string, i int, stops ...byte) (string, int) {
+	var body strings.Builder
+	for i < len(src) && !isByteIn(src[i], stops) {
+		body.WriteByte(src[i])
+		i++
+	}
+	return body.String(), i
+}
+
+func isByteIn(b byte, set []byte) bool {
+	for _, s := range set {
+		if b == s {
+			return true
+		}
+	}
+	return false
+}
+
+// getTernaryCondition extracts the condition expression
+func getTernaryCondition(written string) string {
+	lastNewline := strings.LastIndex(written, "\n")
+	var line string
+	if lastNewline == -1 {
+		line = written
+	} else {
+		line = written[lastNewline+1:]
+	}
+
+	if idx := strings.LastIndex(line, ":="); idx != -1 {
+		return strings.TrimSpace(line[idx+2:])
+	}
+	if idx := strings.LastIndex(line, "="); idx != -1 {
+		return strings.TrimSpace(line[idx+1:])
+	}
+
+	return strings.TrimSpace(line)
+}
+
+// trimTernaryCondition removes the condition from the end of the
+// output buffer
+func trimTernaryCondition(output *strings.Builder) {
+	s := output.String()
+	lastNewline := strings.LastIndex(s, "\n")
+	line := s[lastNewline+1:]
+
+	var keepUntil int
+	if idx := strings.LastIndex(line, ":="); idx != -1 {
+		keepUntil = lastNewline + 1 + idx + len(":=") + 1
+	} else if idx := strings.LastIndex(line, "="); idx != -1 {
+		keepUntil = lastNewline + 1 + idx + len("=") + 1
+	} else {
+		keepUntil = lastNewline + 1
+	}
+
+	output.Reset()
+	output.WriteString(s[:keepUntil])
+}
+
+func renderTernary(condition, trueBranch, falseBranch string) string {
+	return fmt.Sprintf("func() any { if %s { return %s }; return %s }()",
+		condition, trueBranch, falseBranch)
 }
