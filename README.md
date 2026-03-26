@@ -28,9 +28,16 @@ Gollin is an opinionated superset of Go that adds some syntactic sugar. The main
     fmt.Printf("I like %s times %d", cheese, n)
 ```
 
+- Ternary operator
+
+```
+    holes := 2
+    type := holes >= 1 ? "swiss" : "cheddar"
+    fmt.Println(type)
+```
+
 ### Planned 📋
 
-- Ternary operator (`x ? y : z`)
 - Nil-coalescing operator  (`x ?? defaultValue`)
 - Optional chaining like `foo?.bar`
 
